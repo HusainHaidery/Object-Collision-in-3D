@@ -1,11 +1,12 @@
+#include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <math.h>
 //static GLfloat translate[]={0.0,0.0,0.0};
-int v=1;
+float velocity_cube1=0.1, velocity_cube2 = 0.2;
 //angle of rotation
-float xpos = 0, ypos = 0, zpos = 0, xrot = 0, yrot = 0, angle=0.0;
+float xpos = 0, ypos = 0, zpos = 500, xrot = 0, yrot = 0, angle=0.0;
 int x_old, y_old, xj, yj;
 
 //positions of the cubes
@@ -15,26 +16,41 @@ float positionx1,positionx2;
 //draw the cube
 void cube (void) 
 {
-	if(positionx2<=500)
-		positionx2 += v*0.02;
-    glPushMatrix();
+	
+	if(positionx2>=500)
+		velocity_cube2 = -0.2;
+	else if(positionx2<=-500)
+		velocity_cube2 = 0.2;
+		
+	if(positionx1>=500)
+		velocity_cube1 = -0.1;
+	else if(positionx1<=-500)
+		velocity_cube1 = 0.1;
+
+	if(fabs(positionx2-positionx1)<45){
+		velocity_cube2 = -velocity_cube2;
+		velocity_cube1 = -velocity_cube1;
+	}
+		
+	positionx2 += velocity_cube2*0.5;
+	positionx1 += velocity_cube1*0.5;
+	
+	glPushMatrix();
 	glTranslatef(positionx2,0,0);
-    glutSolidCube(2); //draw the cube
+    glutSolidCube(50); //draw the cube
     glPopMatrix();
-	if(positionx2>=-500)
-		positionx1 -= v*0.02;
     glPushMatrix();
     glTranslatef(positionx1,0,0);
-	glutSolidCube(2); //draw the cube
+	glutSolidCube(50); //draw the cube
     glPopMatrix();
 }
 
 void init (void) 
 {
 	positionz1 = 0;
-	positionx1 = 0;
+	positionx1 = 250;
 	positionz2 = 0;
-	positionx2 = -10;
+	positionx2 = 0;
 }
 
 void enable (void) {
@@ -159,13 +175,14 @@ int main (int argc, char **argv) {
     glutInit (&argc, argv);
     glutInitDisplayMode (GLUT_DOUBLE | GLUT_DEPTH); //set the display to Double buffer, with depth
     glutInitWindowSize (500, 500); //set the window size
-	glutInitWindowPosition (100, 100); //set the position of the window
+	//glutInitWindowPosition (100, 100); //set the position of the window
     glutCreateWindow ("A basic OpenGL Window"); //the caption of the window
-    init (); //call the init function
+    glutFullScreen();
+	
+	init (); //call the init function
     glutDisplayFunc (display); //use the display function to draw everything
     glutIdleFunc (display); //update any variables in display, display can be changed to anyhing, as long as you move the variables to be updated, in this case, angle++;
 	//glutTimerFunc(25, update, 0);
-	//glutDisplayFunc(display);
 	//glutIdleFunc(trans);
     glutReshapeFunc (reshape); //reshape the window accordingly
 	glutKeyboardFunc (keyboard); //check the keyboard
