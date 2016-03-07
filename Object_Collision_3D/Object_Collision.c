@@ -3,6 +3,9 @@
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <math.h>
+#define PI 3.14159265358979323846
+#define DEG2RAD(DEG) ((DEG)*((PI)/(180.0)))
+
 //static GLfloat translate[]={0.0,0.0,0.0};
 float velocity_cube1=0.1, velocity_cube2 = 0.2;
 //angle of rotation
@@ -16,7 +19,7 @@ float positionx1,positionx2;
 //draw the cube
 void cube (void) 
 {
-	
+	glClear(GL_COLOR_BUFFER_BIT);
 	if(positionx2>=500)
 		velocity_cube2 = -0.2;
 	else if(positionx2<=-500)
@@ -43,6 +46,35 @@ void cube (void)
     glTranslatef(positionx1,0,0);
 	glutSolidCube(50); //draw the cube
     glPopMatrix();
+    glPushMatrix();
+	glutSolidSphere(30,100,100);
+    glPopMatrix();
+    
+    //glClear(GL_COLOR_BUFFER_BIT);
+ 	glColor3f(0.0, 0.0, 1.0);
+  	glBegin(GL_LINES);										// x-z plane
+  	GLfloat i;
+  	for (i = -500; i <= 500; i += 20) {
+    	//glVertex3f(i, 200,0); glVertex3f(i, 100,0);
+    	//glVertex3f(200, i, 0); glVertex3f(100, i, 0);
+		
+		glColor3f(0.0, 0.0, 1.0);glVertex3f(i, 0, 500); glVertex3f(i, 0, -500);
+    	glColor3f(0.0, 0.0, 1.0);glVertex3f(500, 0, i); glVertex3f(-500, 0, i);
+    	glVertex3f(-500, 0, i); glVertex3f(-500, 500, i);
+    	glVertex3f(500, 0, i); glVertex3f(500, 500, i);
+    	
+    	
+  	}
+  	for(i=0; i<=500; i += 20){
+	  	glVertex3f(-500, i, -500); glVertex3f(500, i, -500);	
+	  	glVertex3f(i, 0, -500); glVertex3f(i, 500, -500);
+		glVertex3f(i-500, 0, -500); glVertex3f(i-500, 500, -500);
+  		glVertex3f(-500, i, 500); glVertex3f(-500, i, -500);
+    	glVertex3f(500, i, 500); glVertex3f(500, i, -500);
+    	
+	  }
+   	glEnd();
+   	
 }
 
 void init (void) 
@@ -159,7 +191,7 @@ void keyboard (unsigned char key, int x, int y) {
     }
 }
 void display (void) {
-    glClearColor (0.0,0.0,0.0,1.0); //clear the screen to black
+    glClearColor (1.0,1.0,0.0,1.0); //clear the screen to black
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //clear the color buffer and the depth buffer
     glLoadIdentity();  
     camera();
