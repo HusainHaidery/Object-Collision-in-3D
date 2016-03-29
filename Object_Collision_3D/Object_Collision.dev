@@ -11,8 +11,8 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=
 CppCompiler=
-Linker="../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libglu32.a"_@@_"../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libglut32.a"_@@_"../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libopengl32.a"_@@_
-IsCpp=0
+Linker="../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libopengl32.a"_@@_"../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libglu32.a"_@@_"../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libglut32.a"_@@_
+IsCpp=1
 Icon=
 ExeOutput=
 ObjectOutput=
@@ -51,8 +51,8 @@ AutoIncBuildNr=0
 SyncProduct=1
 
 [Unit1]
-FileName=Object_Collision.c
-CompileCpp=0
+FileName=object_collision.cpp
+CompileCpp=1
 Folder=
 Compile=1
 Link=1

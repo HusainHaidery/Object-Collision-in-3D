@@ -4,9 +4,9 @@
 CPP      = g++.exe
 CC       = gcc.exe
 WINDRES  = windres.exe
-OBJ      = Object_Collision.o
-LINKOBJ  = Object_Collision.o
-LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW32/lib" -static-libstdc++ -static-libgcc "../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libglu32.a" "../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libglut32.a" "../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libopengl32.a" 
+OBJ      = object_collision.o
+LINKOBJ  = object_collision.o
+LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW32/lib" -static-libstdc++ -static-libgcc "../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libopengl32.a" "../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libglu32.a" "../../../../../../Program Files (x86)/Dev-Cpp/MinGW32/lib/libglut32.a" 
 INCS     = -I"C:/Program Files (x86)/Dev-Cpp/MinGW32/include"
 CXXINCS  = -I"C:/Program Files (x86)/Dev-Cpp/MinGW32/include"
 BIN      = Object_Collision.exe
@@ -23,7 +23,7 @@ clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
 $(BIN): $(OBJ)
-	$(CC) $(LINKOBJ) -o $(BIN) $(LIBS)
+	$(CPP) $(LINKOBJ) -o $(BIN) $(LIBS)
 
-Object_Collision.o: Object_Collision.c
-	$(CC) -c Object_Collision.c -o Object_Collision.o $(CFLAGS)
+object_collision.o: object_collision.cpp
+	$(CPP) -c object_collision.cpp -o object_collision.o $(CXXFLAGS)
