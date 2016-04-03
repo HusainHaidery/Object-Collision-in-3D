@@ -38,28 +38,42 @@ float xpos = 4, ypos = 3, zpos = 7,
 // a maximum height and the xz plane.  Therefore its x and z coordinates
 // are fixed.  It uses a lame bouncing algorithm, simply moving up or
 // down by 0.05 units at each frame.
+class Vector {
+
+	
+	public:
+			double x;
+	double y;
+	double z;
+
+		Vector(double x, double y, double z):x(x), y(y), z(z) {
+		
+		}
+};
 class Ball {
 	double radius;
 	GLfloat* color;
-	double maximumHeight;
+	//double maximumHeight;
 	double x;
 	double y;
 	double z;
-	int direction;
-	double velocity;
+	//Vector direction;
+	Vector velocity;
 	double accelaration;
 	
 	public:
-		Ball(double r, GLfloat* c, double h, double x, double z):
-      	radius(r), color(c), maximumHeight(h), direction(-1), y(h), x(x), z(z) , velocity(0), accelaration(-0.01){
+		Ball(double r, GLfloat* c, double x, double y, double z, Vector velocity, double accelaration):
+      	radius(r), color(c), y(y), x(x), z(z) , velocity(velocity), accelaration(accelaration){
 
   		}
   
   	void update() {
-			velocity += accelaration;
-			
-			y += velocity;
-    	if (y > maximumHeight) {
+		//velocity += accelaration;	
+		x += velocity.x;
+		y += velocity.y;
+		z += velocity.z;
+		
+    	/*if (y > maximumHeight) {
       		y = maximumHeight; direction = -1;
       						velocity *= -1;
 
@@ -67,12 +81,19 @@ class Ball {
       		y = radius; direction = 1;
       						velocity *= -1;
 
-    	}
+    	}*/
     	glPushMatrix();
 		glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
 		glTranslated(x, y, z);
 		glutSolidSphere(radius, 30, 30);
 		glPopMatrix();
+	}
+
+	void detect_collision(Ball two){
+		if(z - two.z <= 4){
+			two.velocity.z = velocity.z;
+			velocity.z = 0;
+		}
 	}
 };
 
@@ -107,6 +128,7 @@ class Cube {
 			glutSolidCube(side); //draw the cube
     		glPopMatrix();
 		}
+		
 };
 
 // A checkerboard class.  A checkerboard has alternating red and white
@@ -153,7 +175,7 @@ class Checkerboard {
         			glVertex3d(x, z+1, 0);
       			}
     		}
-/*    		for (int x = 0; x < width - 1; x++) {
+    		for (int x = 0; x < width - 1; x++) {
 		      	for (int z = 0; z < depth - 1; z++) {
         			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
                     (x + z) % 2 == 0 ? RED : WHITE);
@@ -162,7 +184,17 @@ class Checkerboard {
         			glVertex3d(0, z+1, x+1);
         			glVertex3d(0, z+1, x);
       			}
-    		}*/
+    		}
+    		for (int x = 0; x < width - 1; x++) {
+		      	for (int z = 0; z < depth - 1; z++) {
+        			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
+                    (x + z) % 2 == 0 ? RED : WHITE);
+        			glVertex3d(width-1, z, x);
+        			glVertex3d(width-1, z, x+1);
+        			glVertex3d(width-1, z+1, x+1);
+        			glVertex3d(width-1, z+1, x);
+      			}
+    		}
     		
     		glEnd();
     		glEndList();
@@ -173,12 +205,16 @@ class Checkerboard {
 };
 
 // Global variables: a camera, a checkerboard and some balls.
-Checkerboard checkerboard(16, 16);
+Checkerboard checkerboard(64, 64);
 //Camera camera;
 Ball balls[] = {
-  	Ball(1, GREEN, 10, 6, 1),
-  	Ball(1.5, MAGENTA, 12, 3, 4),
-  	Ball(0.4, WHITE, 15, 1, 7)
+  	//Ball(1, GREEN, 6, 10, 1),
+  	//Ball(1.5, MAGENTA, 3, 12, 4),
+  	//Ball(0.4, WHITE, 1, 15, 7),
+  	Ball(1, WHITE,11,1, 80, Vector(0, 0, -0.05), 0),
+  	Ball(1, GREEN, 10, 1, 16, Vector(0, 0, 0),0),
+  	Ball(1, MAGENTA, 12, 1, 16, Vector(0, 0, 0),0),
+  	Ball(1, WHITE, 11, 1, 18, Vector(0, 0, 0),0)
 };
 Cube cube(2, GREEN, 4,5,2);
 
@@ -212,10 +248,19 @@ void display() {
             0.0, 1.0, 0.0);*/
     camera();
   	checkerboard.draw();
-  	for (int i = 0; i < sizeof balls / sizeof(Ball); i++) {
+  	//sizeof balls / sizeof(Ball)
+  	
+  	for (int i = 0; i < 4; i++) {
     	balls[i].update();
   	}
+  	//balls[3].detect_collision(balls[6]);
+	//balls[3].update_hitter_sphere();
+	//for(int i=4;i<7;i++){
+  	//	balls[i].update_fixed_sphere();
+  	//}
+  	
   	cube.update();
+  	
   	glFlush();
   	glutSwapBuffers();
   	angle++;
