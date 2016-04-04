@@ -5,11 +5,14 @@
 #include <GL/glut.h>
 #endif
 #include <cmath>
-
+#include<math.h>
+#include<stdio.h>
 // Colors
 GLfloat WHITE[] = {1, 1, 1};
 GLfloat RED[] = {1, 0, 0};
 GLfloat GREEN[] = {0, 1, 0};
+
+GLfloat DARK_GREEN[] = {0, 0.39215, 0 }; 
 GLfloat MAGENTA[] = {1, 0, 1};
 int x_old, y_old;
 float xpos = 4, ypos = 3, zpos = 7, 
@@ -42,14 +45,26 @@ class Vector {
 
 	
 	public:
-			double x;
-	double y;
-	double z;
+		double x;
+		double y;
+		double z;
 
 		Vector(double x, double y, double z):x(x), y(y), z(z) {
+			
+		}
 		
+		double angle_btwn_vectors(Vector vec){
+			double temp = x*vec.x + y*vec.y +  z*vec.z;
+			double magnitude_vec1 = sqrt((x*x) + (y*y) + (z*z));
+			double magnitude_vec2 = sqrt((vec.x*vec.x) + (vec.y*vec.y) + (vec.z*vec.z));
+			double angle = temp/(magnitude_vec1 * magnitude_vec2);
+			return angle;
+		}
+		Vector perpendicular(){
+			return Vector(-z, 0 , x);
 		}
 };
+int j=0;
 class Ball {
 	double radius;
 	GLfloat* color;
@@ -69,6 +84,7 @@ class Ball {
   
   	void update() {
 		//velocity += accelaration;	
+		
 		x += velocity.x;
 		y += velocity.y;
 		z += velocity.z;
@@ -89,10 +105,17 @@ class Ball {
 		glPopMatrix();
 	}
 
-	void detect_collision(Ball two){
-		if(z - two.z <= 4){
-			two.velocity.z = velocity.z;
-			velocity.z = 0;
+	void detect_collision(Ball &two){
+		j++;
+		
+		if(fabs(z - two.z) < 2 && fabs(x - two.x) <2){
+			//printf("%d %d  ", z, two.z);
+			//printf("hello %d ", j);
+			Vector distance((two.x - x)/10, (two.y - y)/10, (two.z -z)/10);
+			double angle = distance.angle_btwn_vectors(velocity);
+			two.velocity = distance;
+			velocity = distance.perpendicular();
+			//velocity.x = 0.5;
 		}
 	}
 };
@@ -156,7 +179,7 @@ class Checkerboard {
 		    for (int x = 0; x < width - 1; x++) {
 		      	for (int z = 0; z < depth - 1; z++) {
         			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
-                    (x + z) % 2 == 0 ? RED : WHITE);
+                    (x + z) % 2 == 0 ? GREEN : DARK_GREEN );
         			
 					glVertex3d(x, 0, z);
         			glVertex3d(x+1, 0, z);
@@ -211,7 +234,7 @@ Ball balls[] = {
   	//Ball(1, GREEN, 6, 10, 1),
   	//Ball(1.5, MAGENTA, 3, 12, 4),
   	//Ball(0.4, WHITE, 1, 15, 7),
-  	Ball(1, WHITE,11,1, 80, Vector(0, 0, -0.05), 0),
+  	Ball(1, WHITE,11,1, 80, Vector(0, 0, -0.1), 0),
   	Ball(1, GREEN, 10, 1, 16, Vector(0, 0, 0),0),
   	Ball(1, MAGENTA, 12, 1, 16, Vector(0, 0, 0),0),
   	Ball(1, WHITE, 11, 1, 18, Vector(0, 0, 0),0)
@@ -250,6 +273,14 @@ void display() {
   	checkerboard.draw();
   	//sizeof balls / sizeof(Ball)
   	
+  	//balls[0].detect_collision(balls[1]);
+  	//balls[1].detect_collision(balls[2]);
+  	for(int i=0; i<3;i++){
+  		for(int j=i+1; j<4; j++){
+  			balls[i].detect_collision(balls[j]);
+  		}
+  	}
+	
   	for (int i = 0; i < 4; i++) {
     	balls[i].update();
   	}
