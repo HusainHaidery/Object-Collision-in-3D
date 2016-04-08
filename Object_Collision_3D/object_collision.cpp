@@ -4,46 +4,61 @@
 #else
 #include <GL/glut.h>
 #endif
+#include <GL/gl.h>
 #include <cmath>
+#include <stdlib.h>
 #include<math.h>
 #include<stdio.h>
 // Colors
 GLfloat WHITE[] = {1, 1, 1};
 GLfloat RED[] = {1, 0, 0};
+GLfloat YELLOW[] = {1, 1, 0};
+GLfloat BLUE[] = {0, 0, 1};
 GLfloat GREEN[] = {0, 1, 0};
-
+GLfloat BROWN[] = {0.64, 0.16, 0.16};
 GLfloat DARK_GREEN[] = {0, 0.39215, 0 }; 
 GLfloat MAGENTA[] = {1, 0, 1};
-int x_old, y_old;
-float xpos = 4, ypos = 3, zpos = 7, 
-	xrot = 0, yrot = 0, angle=0.0;
+GLuint texture; //the array for our texture
 
-// A camera.  It moves horizontally in a circle centered at the origin of
-// radius 10.  It moves vertically straight up and down.
-/*class Camera {
-	double theta;      // determines the x and z positions
-	double y;          // the current y position
-	double dTheta;     // increment in theta for swinging the camera around
-	double dy;         // increment in y for moving the camera up/down
+int x_old, y_old, j;
+float xpos = 4, ypos = 3, zpos = 7, xrot = 0, yrot = 0, angle=0.0;
 
-	public:
-		Camera(): theta(0), y(3), dTheta(0.04), dy(0.2) {}
-		double getX() {return 10 * cos(theta);}
-		double getY() {return y;}
-		double getZ() {return 10 * sin(theta);}
-		void moveRight() {theta += dTheta;}
-		void moveLeft() {theta -= dTheta;}
-		void moveUp() {y += dy;}
-		void moveDown() {if (y > dy) y -= dy;}
-};
-*/
-// A ball.  A ball has a radius, a color, and bounces up and down between
-// a maximum height and the xz plane.  Therefore its x and z coordinates
-// are fixed.  It uses a lame bouncing algorithm, simply moving up or
-// down by 0.05 units at each frame.
+GLuint LoadTexture( const char * filename, int width, int height ){
+    GLuint texture;
+    unsigned char * data;
+    FILE * file;
+    file = fopen( filename, "rb" );
+    if ( file == NULL ) 
+		return 0;
+    
+	data = (unsigned char *)malloc( width * height * 3 );
+    fread( data, width * height * 3, 1, file );
+    fclose( file );
+    glGenTextures( 1, &texture ); //generate the texture with the loaded data
+    glBindTexture( GL_TEXTURE_2D, texture ); //bind the textureto it’s array
+    //glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE ); //set texture environment parameters
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+//    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+  //  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+    gluBuild2DMipmaps( GL_TEXTURE_2D, 3, width, height, GL_RGB, GL_UNSIGNED_BYTE, data ); 
+    free( data ); //free the texture
+    return texture; //return whether it was successfull
+}
+
+void FreeTexture( GLuint texture ){
+	glDeleteTextures( 1, &texture ); 
+}
+
+
+
 class Vector {
 
-	
 	public:
 		double x;
 		double y;
@@ -54,111 +69,52 @@ class Vector {
 		}
 		
 		double angle_btwn_vectors(Vector vec){
-			double temp = x*vec.x + y*vec.y +  z*vec.z;
-			double magnitude_vec1 = sqrt((x*x) + (y*y) + (z*z));
-			double magnitude_vec2 = sqrt((vec.x*vec.x) + (vec.y*vec.y) + (vec.z*vec.z));
-			double angle = temp/(magnitude_vec1 * magnitude_vec2);
+			double angle = x*vec.x + y*vec.y +  z*vec.z;
 			return angle;
 		}
 		Vector perpendicular(){
 			return Vector(-z, 0 , x);
 		}
-};
-int j=0;
-class Ball {
-	double radius;
-	GLfloat* color;
-	//double maximumHeight;
-	double x;
-	double y;
-	double z;
-	//Vector direction;
-	Vector velocity;
-	double accelaration;
-	
-	public:
-		Ball(double r, GLfloat* c, double x, double y, double z, Vector velocity, double accelaration):
-      	radius(r), color(c), y(y), x(x), z(z) , velocity(velocity), accelaration(accelaration){
-
-  		}
-  
-  	void update() {
-		//velocity += accelaration;	
 		
-		x += velocity.x;
-		y += velocity.y;
-		z += velocity.z;
-		
-    	/*if (y > maximumHeight) {
-      		y = maximumHeight; direction = -1;
-      						velocity *= -1;
-
-    	} else if (y < radius) {
-      		y = radius; direction = 1;
-      						velocity *= -1;
-
-    	}*/
-    	glPushMatrix();
-		glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
-		glTranslated(x, y, z);
-		glutSolidSphere(radius, 30, 30);
-		glPopMatrix();
-	}
-
-	void detect_collision(Ball &two){
-		j++;
-		
-		if(fabs(z - two.z) < 2 && fabs(x - two.x) <2){
-			//printf("%d %d  ", z, two.z);
-			//printf("hello %d ", j);
-			Vector distance((two.x - x)/10, (two.y - y)/10, (two.z -z)/10);
-			double angle = distance.angle_btwn_vectors(velocity);
-			two.velocity = distance;
-			velocity = distance.perpendicular();
-			//velocity.x = 0.5;
+		Vector crossProduct(Vector v) {
+			return Vector (y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 		}
-	}
-};
-
-class Cube {
-	double side;
-	GLfloat* color;
-	int direction;
-	double x;
-	double y;
-	double z;
-	
-	public:
-		Cube(double side, GLfloat* c, double x, double y, double z):
-		side(side), color(c), x(x), y(y), z(z), direction(1){
-			
-		}	
-		
-		void update(){
-			x += direction* 0.05;
-			
-			if(x > 16) {
-				x = 16;
-				direction = -1;
-			}else if(x<0){
-				x = 0;
-				direction = 1;
-
-			}
-			glPushMatrix();
-			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
-			glTranslated(x,y,z);
-			glutSolidCube(side); //draw the cube
-    		glPopMatrix();
+		double magnitude () {
+			return sqrt((x*x) + (y*y) + (z*z));
+		}
+		Vector normalize () {
+			double magnitude = sqrt((x*x) + (y*y) + (z*z));
+			return Vector(x/magnitude, y/magnitude, z/magnitude);
+		}
+		double distance_btwn_vectors(Vector vec){
+			return sqrt((x - vec.x)*(x - vec.x) + (y - vec.y)*(y- vec.y) + (z - vec.z)*(z - vec.z));
+		}
+		Vector add(Vector vec){
+			return Vector(x + vec.x, y + vec.y, z + vec.z);
+		}
+		Vector reduce_magnitude(){
+			return Vector(x*0.9, y*0.9, z*0.9);
+		}
+		Vector multiplyconstant (double scalar) {
+			printf("%lf %lf %lf \n", x, y, z);
+			return Vector (x*scalar, y*scalar, z*scalar);
 		}
 		
+		Vector multiply_matrix (double angle) {
+			double m[3][3];
+			angle = (angle * 0.01745329251);                                //degree to radian conversion
+	     	printf("\nAngle = %f, cos(%f) = %f\n",angle,angle,cosf(angle));
+	    	m[0][0] = cosf(angle);
+	     	m[0][1] = sinf(angle);
+	     	m[0][2] = 0; //refX * (1 - cosf(angle)) + refY*(sinf(angle));
+	     	m[1][0] = -sinf(angle);
+	     	m[1][1] = cosf(angle);
+	     	m[1][2] = 0; //refY * (1 - cosf(angle)) + refX*(sinf(angle));
+	     	printf("%lf\n", z);
+			 return Vector(x*m[0][0] + z * m[0][1] ,y, x*m[1][0] + z * m[1][1] );
+		}
 };
 
-// A checkerboard class.  A checkerboard has alternating red and white
-// squares.  The number of squares is set in the constructor.  Each square
-// is 1 x 1.  One corner of the board is (0, 0) and the board stretches out
-// along positive x and positive z.  It rests on the xz plane.  I put a
-// spotlight at (4, 3, 7).
 class Checkerboard {
 	int displayListId;
 	int width;
@@ -169,77 +125,180 @@ class Checkerboard {
   		double centerx() {return width / 2;}
   		double centerz() {return depth / 2;}
   		void create() {
-		    displayListId = glGenLists(1);
-		    glNewList(displayListId, GL_COMPILE);
-		    GLfloat lightPosition[] = {4, 3, 7, 1};
-		    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-		    glBegin(GL_QUADS);
+		    //glBindTexture( GL_TEXTURE_2D, texture );
+			displayListId = glGenLists(1);		    
+			glNewList(displayListId, GL_COMPILE);
+			//GLfloat lightPosition[] = {4, 3, 7, 1};
+		    //glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+			glBegin(GL_QUADS);
 		    glNormal3d(0, 1, 0);
-		    
 		    for (int x = 0; x < width - 1; x++) {
-		      	for (int z = 0; z < depth - 1; z++) {
-        			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
-                    (x + z) % 2 == 0 ? GREEN : DARK_GREEN );
-        			
-					glVertex3d(x, 0, z);
-        			glVertex3d(x+1, 0, z);
-        			glVertex3d(x+1, 0, z+1);
-        			glVertex3d(x, 0, z+1);
-      			}
-      			
-    		}
-    		for (int x = 0; x < width - 1; x++) {
-		      	for (int z = 0; z < depth - 1; z++) {
-        			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
-                    (x + z) % 2 == 0 ? RED : WHITE);
-        			glVertex3d(x, z, 0);
-        			glVertex3d(x+1, z, 0);
-        			glVertex3d(x+1, z+1, 0);
-        			glVertex3d(x, z+1, 0);
+		    	for (int z = 0; z < depth - 1; z++) {
+        			//glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
+                    //(x + z) % 2 == 0 ? GREEN : DARK_GREEN );	
+					glTexCoord2d(0.0,0.0);glVertex3d(x, 0, z);
+        			glTexCoord2d(1.0,0.0);glVertex3d(x+1, 0, z);
+        			glTexCoord2d(1.0,1.0);glVertex3d(x+1, 0, z+1);
+        			glTexCoord2d(0.0,1.0);glVertex3d(x, 0, z+1);
+        			//glBindTexture(GL_TEXTURE_2D, 0);
       			}
     		}
-    		for (int x = 0; x < width - 1; x++) {
-		      	for (int z = 0; z < depth - 1; z++) {
-        			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
-                    (x + z) % 2 == 0 ? RED : WHITE);
-        			glVertex3d(0, z, x);
-        			glVertex3d(0, z, x+1);
-        			glVertex3d(0, z+1, x+1);
-        			glVertex3d(0, z+1, x);
-      			}
-    		}
-    		for (int x = 0; x < width - 1; x++) {
-		      	for (int z = 0; z < depth - 1; z++) {
-        			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
-                    (x + z) % 2 == 0 ? RED : WHITE);
-        			glVertex3d(width-1, z, x);
-        			glVertex3d(width-1, z, x+1);
-        			glVertex3d(width-1, z+1, x+1);
-        			glVertex3d(width-1, z+1, x);
-      			}
-    		}
-    		
+			
     		glEnd();
-    		glEndList();
+			glEndList();
   		}
 	 	void draw() {
     		glCallList(displayListId);
   		}		
 };
+void draw_border(){
+			glBegin(GL_QUADS);
+		    glNormal3d(0, 1, 0);
+		    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, BROWN);
+			for (int z = 0; z < 47; z++) {
+				glVertex3d(0, 0, z);
+    			glVertex3d(0, 1, z);
+    			glVertex3d(0, 1, z+1);
+    			glVertex3d(0, 0, z+1);
+      		}
+      		for (int z = 0; z < 47; z++) {	
+				glVertex3d(23, 0, z);
+    			glVertex3d(23, 1, z);
+    			glVertex3d(23, 1, z+1);
+    			glVertex3d(23, 0, z+1);
+      		}
+			for (int x = 0; x < 23; x++) {
+    			
+				glVertex3d(x, 0, 0);
+    			glVertex3d(x, 1, 0);
+    			glVertex3d(x+1, 1, 0);
+    			glVertex3d(x+1, 0, 0);
+      		}
+			for (int x = 0; x < 23; x++) {        			
+				glVertex3d(x, 0, 47);
+    			glVertex3d(x, 1, 47);
+    			glVertex3d(x+1, 1, 47);
+    			glVertex3d(x+1, 0, 47);
+      		}	
+      		
+      		for (int z = -1; z < 48; z++) {
+				glVertex3d(-1, 0, z);
+    			glVertex3d(-1, 1, z);
+    			glVertex3d(-1, 1, z+1);
+    			glVertex3d(-1, 0, z+1);
+      		}
+      		for (int z = -1; z < 48; z++) {	
+				glVertex3d(24, 0, z);
+    			glVertex3d(24, 1, z);
+    			glVertex3d(24, 1, z+1);
+    			glVertex3d(24, 0, z+1);
+      		}
+			for (int x = -1; x < 24; x++) {
+    			
+				glVertex3d(x, 0, -1);
+    			glVertex3d(x, 1, -1);
+    			glVertex3d(x+1, 1, -1);
+    			glVertex3d(x+1, 0, -1);
+      		}
+			for (int x = -1; x < 24; x++) {        			
+				glVertex3d(x, 0, 48);
+    			glVertex3d(x, 1, 48);
+    			glVertex3d(x+1, 1, 48);
+    			glVertex3d(x+1, 0, 48);
+      		}
+      		for (int x = -1; x < 24; x++) {        			
+				glVertex3d(x, 1, 47);
+    			glVertex3d(x+1, 1, 47);
+    			glVertex3d(x+1, 1, 48);
+    			glVertex3d(x, 1, 48);
+      		}
+    		glEnd();
+}
+class Ball {
 
-// Global variables: a camera, a checkerboard and some balls.
-Checkerboard checkerboard(64, 64);
-//Camera camera;
-Ball balls[] = {
-  	//Ball(1, GREEN, 6, 10, 1),
-  	//Ball(1.5, MAGENTA, 3, 12, 4),
-  	//Ball(0.4, WHITE, 1, 15, 7),
-  	Ball(1, WHITE,11,1, 80, Vector(0, 0, -0.1), 0),
-  	Ball(1, GREEN, 10, 1, 16, Vector(0, 0, 0),0),
-  	Ball(1, MAGENTA, 12, 1, 16, Vector(0, 0, 0),0),
-  	Ball(1, WHITE, 11, 1, 18, Vector(0, 0, 0),0)
+	public:
+		double radius;
+		GLfloat* color;
+		double x;
+		double y;
+		double z;
+		Vector velocity;
+		double accelaration;
+		
+		Ball(double r, GLfloat* c, double x, double y, double z, Vector velocity, double accelaration):
+      	radius(r), color(c), y(y), x(x), z(z) , velocity(velocity), accelaration(accelaration){
+
+  		}
+  
+  		void update() {
+			//velocity += accelaration;	
+			if(x<1 || x > 22 ){
+				velocity.x = -velocity.x;
+			}
+			if(z<1 || z > 46){
+				velocity.z = -velocity.z;
+			}
+			
+			x += velocity.x;
+			y += velocity.y;
+			z += velocity.z;
+			velocity.reduce_magnitude();
+			//glBindTexture(GL_TEXTURE_2D, 0);
+			//glBindTexture( GL_TEXTURE_2D, texture );
+	    	glPushMatrix();
+			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
+			glTranslated(x, y, z);
+			glutSolidSphere(radius, 30, 30);
+			glPopMatrix();
+			//glBindTexture( GL_TEXTURE_2D, 0 );
+		}
+
+		void detect_collision(Ball &two){
+			j++;
+			
+			if( Vector(x,y,z).distance_btwn_vectors( Vector(two.x, two.y , two.z)) < 2){
+				printf("%lf %lf  \n", z, two.z);
+				printf("%lf %lf  \n", x, two.x);
+				//printf("hello %d ", j);
+				double v1 = velocity.magnitude();
+				double v2 = two.velocity.magnitude();
+				if(v1 > v2){
+					Vector direction = Vector((two.x - x), (two.y - y), (two.z -z)).normalize();
+					double cos_angle = direction.angle_btwn_vectors(velocity.normalize());
+					double sin_angle = sqrt(1 - (cos_angle*cos_angle));
+					two.velocity = two.velocity.add(direction.multiplyconstant(v1*cos_angle));
+					if((direction.crossProduct(velocity.normalize())).y < 0)
+						velocity = (direction.perpendicular()).multiplyconstant(v1*sin_angle);
+					else
+						velocity = (direction.perpendicular()).multiplyconstant(-1*v1*sin_angle);
+				}else if(v1 < v2){
+					Vector direction = Vector(-(two.x - x), -(two.y - y), -(two.z -z)).normalize();
+					double cos_angle = direction.angle_btwn_vectors(two.velocity.normalize());
+					double sin_angle = sqrt(1 - (cos_angle*cos_angle));
+					velocity = velocity.add(direction.multiplyconstant(v2*cos_angle));
+					if((direction.crossProduct(two.velocity.normalize())).y < 0)
+						two.velocity = (direction.perpendicular()).multiplyconstant(v2*sin_angle);
+					else
+						two.velocity = (direction.perpendicular()).multiplyconstant(-1*v2*sin_angle);
+				}
+			}
+		}
 };
-Cube cube(2, GREEN, 4,5,2);
+
+
+
+	// Global variables: a camera, a checkerboard and some balls.
+	Checkerboard checkerboard(24 , 48);
+	//Camera camera;
+	Ball balls[] = {
+	  	Ball(1, WHITE,11,1, 45, Vector(0, 0, 0), 0),
+	  	Ball(1, RED, 10, 1, 22, Vector(0, 0, 0),0),
+	  	Ball(1, RED, 12, 1, 22, Vector(0, 0, 0),0),
+		Ball(1, RED, 14, 1, 22, Vector(0, 0, 0),0),
+		Ball(1, YELLOW, 11, 1, 24, Vector(0, 0, 0),0),
+	  	Ball(1, YELLOW, 13, 1, 24, Vector(0, 0, 0),0),
+		Ball(1, BLUE, 12, 1, 26, Vector(0, 0, 0),0)
+	};
 
 
 void camera (void) {
@@ -252,6 +311,7 @@ void camera (void) {
 // and create display lists.
 void init() {
 	  glEnable(GL_DEPTH_TEST);
+	  glEnable( GL_TEXTURE_2D );
 	  glLightfv(GL_LIGHT0, GL_DIFFUSE, WHITE);
 	  glLightfv(GL_LIGHT0, GL_SPECULAR, WHITE);
 	  glMaterialfv(GL_FRONT, GL_SPECULAR, WHITE);
@@ -270,28 +330,23 @@ void display() {
             checkerboard.centerx(), 0.0, checkerboard.centerz(),
             0.0, 1.0, 0.0);*/
     camera();
-  	checkerboard.draw();
   	//sizeof balls / sizeof(Ball)
-  	
-  	//balls[0].detect_collision(balls[1]);
-  	//balls[1].detect_collision(balls[2]);
-  	for(int i=0; i<3;i++){
-  		for(int j=i+1; j<4; j++){
+  	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture);
+  	checkerboard.draw();
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+	
+	draw_border();  	
+  	for(int i=0; i<6;i++){
+  		for(int j=i+1; j<7; j++){
   			balls[i].detect_collision(balls[j]);
   		}
   	}
-	
-  	for (int i = 0; i < 4; i++) {
+  	for (int i = 0; i < 7; i++) {
     	balls[i].update();
   	}
-  	//balls[3].detect_collision(balls[6]);
-	//balls[3].update_hitter_sphere();
-	//for(int i=4;i<7;i++){
-  	//	balls[i].update_fixed_sphere();
-  	//}
-  	
-  	cube.update();
-  	
+	
   	glFlush();
   	glutSwapBuffers();
   	angle++;
@@ -312,27 +367,9 @@ void timer(int v) {
   glutTimerFunc(1000/60, timer, v);
 }
 
-// Moves the camera according to the key pressed, then ask to refresh the
-// display.
-/*void special(int key, int, int) {
-  switch (key) {
-    case GLUT_KEY_LEFT: camera.moveLeft(); break;
-    case GLUT_KEY_RIGHT: camera.moveRight(); break;
-    case GLUT_KEY_UP: camera.moveUp(); break;
-    case GLUT_KEY_DOWN: camera.moveDown(); break;
-    
-  }
-  glutPostRedisplay();
-}*/
-/*void keyboard(unsigned char key, int x, int y){
-	if(key==27){
-		exit(0);
-	}	
-}
-*/
 void mouse_motion(int x, int y){
 	if ((x-x_old)>0){
-		//camera.moveRight();
+		//camera.moveRight(); 
 	    yrot += 1;
 	    if (yrot >360) 
 			yrot -= 360;
@@ -359,6 +396,14 @@ void mouse_motion(int x, int y){
 	y_old = y;          
 	x_old = x;			
 }
+
+void mouse(int btn, int state, int x, int y)  {  
+	int wh=500;
+	if(btn==GLUT_LEFT_BUTTON && state == GLUT_DOWN){  
+        x_old = x;  
+        y_old = (wh-y);
+    }     
+}  
 
 void keyboard (unsigned char key, int x, int y) {
     if (key=='q'){
@@ -402,22 +447,34 @@ void keyboard (unsigned char key, int x, int y) {
     	if (yrot < -360)
 			yrot += 360;
     }
+    if(key == 'k'){
+    	printf("%lf \n", balls[0].velocity.z);
+		balls[0].velocity = Vector(0,0,-0.5);//balls[0].velocity.multiply_matrix(30);
+    	
+    }
     
 	if (key==27){
 	    exit(0);
     }
 }
 
+void special(int key, int, int) {
+	switch (key) {
+    	case GLUT_KEY_LEFT: 
+			balls[0].velocity = balls[0].velocity.multiply_matrix(30);
+    		break;
+    	case GLUT_KEY_RIGHT: 
+			balls[0].velocity = balls[0].velocity.multiply_matrix(-30);
+    		break;
+    	case GLUT_KEY_UP:  break;
+    	case GLUT_KEY_DOWN: break;
+    
+  	}
+  	glutPostRedisplay();
+}
 
 
-void mouse(int btn, int state, int x, int y)  {  
-	
-	int wh=500;
-	if(btn==GLUT_LEFT_BUTTON && state == GLUT_DOWN){  
-        x_old = x;  
-        y_old = (wh-y);
-    }     
-}  
+
 
 
 // Initializes GLUT and enters the main loop.
@@ -430,11 +487,14 @@ int main(int argc, char** argv) {
 	glutFullScreen();
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
-	//glutSpecialFunc(special);
+	glutSpecialFunc(special);
 	glutKeyboardFunc (keyboard);
 	glutMotionFunc( mouse_motion);	
 	glutMouseFunc(mouse);
 	glutTimerFunc(100, timer, 0);
 	init();
+	texture = LoadTexture( "C:/Users/Husain/Documents/GL/Object-Collision-in-3D/Object_Collision_3D/texture2.bmp", 256, 256 ); //load our texture
 	glutMainLoop();
+	FreeTexture(texture);
+	//return 0;
 }
