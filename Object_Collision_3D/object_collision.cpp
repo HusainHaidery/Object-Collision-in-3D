@@ -84,6 +84,9 @@ class Vector {
 		}
 		Vector normalize () {
 			double magnitude = sqrt((x*x) + (y*y) + (z*z));
+			if(magnitude==0)
+				return Vector(0,0,0);
+				
 			return Vector(x/magnitude, y/magnitude, z/magnitude);
 		}
 		double distance_btwn_vectors(Vector vec){
@@ -262,7 +265,30 @@ class Ball {
 				//printf("hello %d ", j);
 				double v1 = velocity.magnitude();
 				double v2 = two.velocity.magnitude();
-				if(v1 > v2){
+				//v1
+				Vector temp2(0,0,0),temp4(0,0,0);
+				Vector direction = Vector((two.x - x), (two.y - y), (two.z -z)).normalize();
+				double cos_angle = direction.angle_btwn_vectors(velocity.normalize());
+				double sin_angle = sqrt(1 - (cos_angle*cos_angle));
+				Vector temp1 = direction.multiplyconstant(v1*cos_angle); //two.velocity.
+				
+				if((direction.crossProduct(velocity.normalize())).y < 0)
+						temp2 = (direction.perpendicular()).multiplyconstant(v1*sin_angle);		//velocity
+					else
+						temp2 = (direction.perpendicular()).multiplyconstant(-1*v1*sin_angle);
+				
+				direction = direction.multiplyconstant(-1);
+				cos_angle = direction.angle_btwn_vectors(two.velocity.normalize());
+				sin_angle = sqrt(1 - (cos_angle*cos_angle));
+				Vector temp3 = direction.multiplyconstant(v2*cos_angle); //velocity.
+				if((direction.crossProduct(two.velocity.normalize())).y < 0)
+						temp4 = (direction.perpendicular()).multiplyconstant(v2*sin_angle);		//two.velocity
+					else
+						temp4 = (direction.perpendicular()).multiplyconstant(-1*v2*sin_angle);
+				
+				velocity = temp2.add(temp3);
+				two.velocity = temp1.add(temp4);
+				/*if(v1 > v2){
 					Vector direction = Vector((two.x - x), (two.y - y), (two.z -z)).normalize();
 					double cos_angle = direction.angle_btwn_vectors(velocity.normalize());
 					double sin_angle = sqrt(1 - (cos_angle*cos_angle));
@@ -271,7 +297,7 @@ class Ball {
 						velocity = (direction.perpendicular()).multiplyconstant(v1*sin_angle);
 					else
 						velocity = (direction.perpendicular()).multiplyconstant(-1*v1*sin_angle);
-				}else if(v1 < v2){
+				}else {
 					Vector direction = Vector(-(two.x - x), -(two.y - y), -(two.z -z)).normalize();
 					double cos_angle = direction.angle_btwn_vectors(two.velocity.normalize());
 					double sin_angle = sqrt(1 - (cos_angle*cos_angle));
@@ -280,7 +306,7 @@ class Ball {
 						two.velocity = (direction.perpendicular()).multiplyconstant(v2*sin_angle);
 					else
 						two.velocity = (direction.perpendicular()).multiplyconstant(-1*v2*sin_angle);
-				}
+				}*/
 			}
 		}
 };
