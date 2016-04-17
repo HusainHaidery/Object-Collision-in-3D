@@ -13,35 +13,139 @@ GLfloat GREEN[] = {0, 1, 0};
 GLfloat BROWN[] = {0.64, 0.16, 0.16};
 GLfloat DARK_GREEN[] = {0, 0.39215, 0 }; 
 GLfloat MAGENTA[] = {1, 0, 1};
-GLuint texture[2]; //the array for our texture
+int NB_TEXTURES = 2;
+static GLuint texName[2];
+//GLuint texture[2]; //the array for our texture
 
 int x_old, y_old, j;
 float xpos = 10, ypos = 45, zpos = 70, xrot = 45, yrot = 0,yrotn=0, angle=0.0;
 
-GLuint LoadTexture( const char * filename, int width, int height ){
-    GLuint texture;
-    unsigned char * data;
-    FILE * file;
-    file = fopen( filename, "rb" );
-    if ( file == NULL ) 
-		return 0;
-    
-	data = (unsigned char *)malloc( width * height * 3 );
-    fread( data, width * height * 3, 1, file );
-    fclose( file );
-    glGenTextures( 2, &texture ); //generate the texture with the loaded data
-    glBindTexture( GL_TEXTURE_2D, texture[0] ); //bind the textureto it’s array
-    //glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE ); //set texture environment parameters
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-//glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    gluBuild2DMipmaps( GL_TEXTURE_2D, 3, width, height, GL_RGB, GL_UNSIGNED_BYTE, data ); 
-    free( data ); //free the texture
-    return texture; //return whether it was successfull
+GLuint texture[2];
+GLint slices=16;
+GLint stacks=16;
+struct Image {
+    unsigned long sizeX;
+    unsigned long sizeY;
+    char *data;
+};
+typedef struct Image Image;
+
+int ImageLoad(char *filename, Image *image) {
+    FILE *file;
+    unsigned long size; // size of the image in bytes.
+    unsigned long i; // standard counter.
+    unsigned short int plane; // number of planes in image
+
+    unsigned short int bpp; // number of bits per pixel
+    char temp; // temporary color storage for
+    if ((file = fopen(filename, "rb"))==NULL)
+    {
+        printf("File Not Found : %s\n",filename);
+        return 0;
+    }
+    // seek through the bmp header, up to the width/height:
+    fseek(file, 18, SEEK_CUR);
+    // read the width
+        if ((i = fread(&image->sizeX, 4, 1, file)) != 1) {
+        printf("Error reading width from %s.\n", filename);
+        return 0;
+    }
+    if ((i = fread(&image->sizeY, 4, 1, file)) != 1) {
+        printf("Error reading height from %s.\n", filename);
+        return 0;
+    }
+    printf("%d ", image->sizeX);
+    size = image->sizeX * image->sizeY * 3;
+    // read the planes
+    if ((fread(&plane, 2, 1, file)) != 1) {
+        printf("Error reading planes from %s.\n", filename);
+        return 0;
+    }
+    if (plane != 1) {
+            printf("Planes from %s is not 1: %u\n", filename, plane);
+        return 0;
+    }
+    // read the bitsperpixel
+    if ((i = fread(&bpp, 2, 1, file)) != 1) {
+        printf("Error reading bpp from %s.\n", filename);
+
+    return 0;
+    }
+    if (bpp != 24) {
+        printf("Bpp from %s is not 24: %u\n", filename, bpp);
+        return 0;
+    }
+    // seek past the rest of the bitmap header.
+    fseek(file, 24, SEEK_CUR);
+    // read the data.
+    image->data = (char *) malloc(size);
+    if (image->data == NULL) {
+        printf("Error allocating memory for color-corrected image data");
+        return 0;
+    }
+    if ((i = fread(image->data, size, 1, file)) != 1) {
+        printf("Error reading image data from %s.\n", filename);
+        return 0;
+    }
+    for (i=0;i<size;i+=3) { // reverse all of the colors. (bgr -> rgb)
+        temp = image->data[i];
+        image->data[i] = image->data[i+2];
+        image->data[i+2] = temp;
+    }
+    // we're done.
+    return 1;
+}
+
+Image * loadTexture(char* file)
+{
+    Image *image1;
+    image1 = (Image *) malloc(sizeof(Image));
+    if (image1 == NULL) {
+        printf("Error allocating space for image");
+        exit(0);
+    }
+    //pic.bmp is a 64x64 picture
+    if (!ImageLoad(file, image1)) {
+        exit(1);
+    }
+    return image1;
+}
+
+void init_textures()
+{
+    Image* images[NB_TEXTURES];
+
+    images[0] = loadTexture("textures/texture1.bmp");
+    if(images[0] == NULL)
+    {
+        printf("ground.bmp was not returned from loadTexture\n");
+        exit(0);
+    }
+
+    images[1] = loadTexture("textures/wood_texture.bmp");
+    if(images[1] == NULL)
+    {
+        printf("skin.bmp was not returned from loadTexture\n");
+        exit(0);
+    }
+
+    glGenTextures(NB_TEXTURES, texName);
+
+    int i;
+    for (i=0; i<NB_TEXTURES; ++i)
+    {
+        glBindTexture(GL_TEXTURE_2D, texName[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                       GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                       GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, images[i]->sizeX,
+                    images[i]->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE,
+                    images[i]->data);
+    }
+
+
+    //glEnable(GL_TEXTURE_2D);
 }
 
 void FreeTexture( GLuint texture ){
@@ -163,66 +267,66 @@ void draw_border(){
 	int x, z;
 	glBegin(GL_QUADS);
     glNormal3d(0, 1, 0);
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, BROWN);
-	 glVertex3d(0, 0, 0);
-	 glVertex3d(0, 1, 0);
-	 glVertex3d(0, 1, 48);
-	 glVertex3d(0, 0, 48);
+	//glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, BROWN);
+	 glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 0);
+	 glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 0);
+	 glTexCoord2d(1.0,1.0);glVertex3d(0, 1, 48);
+	 glTexCoord2d(0.0,1.0);glVertex3d(0, 0, 48);
 	
-		glVertex3d(23, 0, 0);
-		glVertex3d(23, 1, 0);
-		glVertex3d(23, 1, 48);
-		glVertex3d(23, 0, 48);
+		glTexCoord2d(0.0,0.0);glVertex3d(23, 0, 0);
+		glTexCoord2d(1.0,0.0);glVertex3d(23, 1, 0);
+		glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 48);
+		glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 48);
 	
-		glVertex3d(0, 0, 0);
-		glVertex3d(0, 1, 0);
-		glVertex3d(23, 1, 0);
-		glVertex3d(23, 0, 0);
+		glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 0);
+		glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 0);
+		glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 0);
+		glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 0);
 	        			
-		glVertex3d(0, 0, 47);
-		glVertex3d(0, 1, 47);
-		glVertex3d(23, 1, 47);
-		glVertex3d(23, 0, 47);
+		glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 47);
+		glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 47);
+		glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 47);
+		glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 47);
 	
-		glVertex3d(-1, 0, -1);
-		glVertex3d(-1, 1, -1);
-		glVertex3d(-1, 1, 48);
-		glVertex3d(-1, 0, 48);
+		glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, -1);
+		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, -1);
+		glTexCoord2d(1.0,1.0);glVertex3d(-1, 1, 48);
+		glTexCoord2d(0.0,1.0);glVertex3d(-1, 0, 48);
 		
-		glVertex3d(24, 0, -1);
-		glVertex3d(24, 1, -1);
-		glVertex3d(24, 1, 48);
-		glVertex3d(24, 0, 48);
+		glTexCoord2d(0.0,0.0);glVertex3d(24, 0, -1);
+		glTexCoord2d(1.0,0.0);glVertex3d(24, 1, -1);
+		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
+		glTexCoord2d(0.0,1.0);glVertex3d(24, 0, 48);
 	
-		glVertex3d(-1, 0, -1);
-		glVertex3d(-1, 1, -1);
-		glVertex3d(24, 1, -1);
-		glVertex3d(24, 0, -1);
+		glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, -1);
+		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, -1);
+		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, -1);
+		glTexCoord2d(0.0,1.0);glVertex3d(24, 0, -1);
 	
-		glVertex3d(-1, 0, 48);
-		glVertex3d(-1, 1, 48);
-		glVertex3d(24, 1, 48);
-		glVertex3d(24, 0, 48);
+		glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, 48);
+		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 48);
+		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
+		glTexCoord2d(0.0,1.0);glVertex3d(24, 0, 48);
 	
-		glVertex3d(-1, 1, 47);
-		glVertex3d(24, 1, 47);
-		glVertex3d(24, 1, 48);
-		glVertex3d(-1, 1, 48);
+		glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, 47);
+		glTexCoord2d(1.0,0.0);glVertex3d(24, 1, 47);
+		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
+		glTexCoord2d(0.0,1.0);glVertex3d(-1, 1, 48);
 		
-		glVertex3d(-1, 1, -1);
-		glVertex3d(-1, 1, 0);
-		glVertex3d(24, 1, 0);
-		glVertex3d(24, 1, -1);
+		glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, -1);
+		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 0);
+		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 0);
+		glTexCoord2d(0.0,1.0);glVertex3d(24, 1, -1);
 
-		glVertex3d(-1, 1, 0);
-		glVertex3d(-1, 1, 47);
-		glVertex3d(0, 1, 47);
-		glVertex3d(0, 1, 0);
+		glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, 0);
+		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 47);
+		glTexCoord2d(1.0,1.0);glVertex3d(0, 1, 47);
+		glTexCoord2d(0.0,1.0);glVertex3d(0, 1, 0);
 
-		glVertex3d(23, 1, 0);
-		glVertex3d(23, 1, 47);
-		glVertex3d(24, 1, 47);
-		glVertex3d(24, 1, 0);
+		glTexCoord2d(0.0,0.0);glVertex3d(23, 1, 0);
+		glTexCoord2d(1.0,0.0);glVertex3d(23, 1, 47);
+		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 47);
+		glTexCoord2d(0.0,1.0);glVertex3d(24, 1, 0);
 
 	glEnd();
 }
@@ -396,16 +500,21 @@ void display() {
     camera();
 
   	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture);
-  	table.draw();
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, texName[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	  table.draw();
     glDisable(GL_TEXTURE_2D);
-	//texture2 = LoadTexture( "C:/Users/Husain/Documents/GL/Object-Collision-in-3D/Object_Collision_3D/texture.bmp", 300, 300 ); //load our texture
-	//glEnable(GL_TEXTURE_2D);
-	//glBindTexture(GL_TEXTURE_2D, texture);
+
+  	glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texName[1]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
 	draw_border();
-	//glBindTexture(GL_TEXTURE_2D, 0);
-    //glDisable(GL_TEXTURE_2D);
+    glDisable(GL_TEXTURE_2D);
 
 	arrow.translate_arrow();
 	arrow.draw_arrow();
@@ -561,11 +670,11 @@ int main(int argc, char** argv) {
 	glutMouseFunc(mouse);
 	glutTimerFunc(100, timer, 0);
 	init();
-	
-	texture[0] = LoadTexture( "C:/Users/Husain/Documents/GL/Object-Collision-in-3D/Object_Collision_3D/texture2.bmp", 300, 300 ); //load our texture
-	texture[1] = LoadTexture( "C:/Users/Husain/Documents/GL/Object-Collision-in-3D/Object_Collision_3D/textures/texture.bmp", 300, 300 ); //load our texture
+	init_textures();
+	//texture[0] = LoadTexture( "C:/Users/Husain/Documents/GL/Object-Collision-in-3D/Object_Collision_3D/texture2.bmp", 300, 300 ); //load our texture
+	//texture[1] = LoadTexture( "C:/Users/Husain/Documents/GL/Object-Collision-in-3D/Object_Collision_3D/textures/texture.bmp", 300, 300 ); //load our texture
 
 	glutMainLoop();
-	FreeTexture(texture);
+	//FreeTexture(texture);
 	//return 0;
 }
