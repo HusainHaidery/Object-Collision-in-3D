@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include<math.h>
 #include<stdio.h>
+
 // Colors
 GLfloat WHITE[] = {1, 1, 1};
 GLfloat RED[] = {1, 0, 0};
@@ -11,23 +12,21 @@ GLfloat YELLOW[] = {1, 1, 0};
 GLfloat BLUE[] = {0, 0, 1};
 GLfloat GREEN[] = {0, 1, 0};
 GLfloat BROWN[] = {0.64, 0.16, 0.16};
-GLfloat DARK_GREEN[] = {0, 0.39215, 0 }; 
-GLfloat MAGENTA[] = {1, 0, 1};
+
 int NB_TEXTURES = 2;
 static GLuint texName[2];
-//GLuint texture[2]; //the array for our texture
 
 int x_old, y_old, j;
 float xpos = 10, ypos = 45, zpos = 70, xrot = 45, yrot = 0,yrotn=0, angle=0.0;
 
 GLuint texture[2];
-GLint slices=16;
-GLint stacks=16;
+
 struct Image {
     unsigned long sizeX;
     unsigned long sizeY;
     char *data;
 };
+
 typedef struct Image Image;
 
 int ImageLoad(char *filename, Image *image) {
@@ -96,8 +95,7 @@ int ImageLoad(char *filename, Image *image) {
     return 1;
 }
 
-Image * loadTexture(char* file)
-{
+Image * loadTexture(char* file){
     Image *image1;
     image1 = (Image *) malloc(sizeof(Image));
     if (image1 == NULL) {
@@ -115,17 +113,17 @@ void init_textures()
 {
     Image* images[NB_TEXTURES];
 
-    images[0] = loadTexture("textures/texture1.bmp");
+    images[0] = loadTexture("textures/pool_texture.bmp");
     if(images[0] == NULL)
     {
-        printf("ground.bmp was not returned from loadTexture\n");
+        printf("pool_texture.bmp was not returned from loadTexture\n");
         exit(0);
     }
 
     images[1] = loadTexture("textures/wood_texture.bmp");
     if(images[1] == NULL)
     {
-        printf("skin.bmp was not returned from loadTexture\n");
+        printf("wood_texture.bmp was not returned from loadTexture\n");
         exit(0);
     }
 
@@ -135,24 +133,16 @@ void init_textures()
     for (i=0; i<NB_TEXTURES; ++i)
     {
         glBindTexture(GL_TEXTURE_2D, texName[i]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                       GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                       GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, images[i]->sizeX,
-                    images[i]->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE,
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, images[i]->sizeX,images[i]->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE,
                     images[i]->data);
     }
-
-
-    //glEnable(GL_TEXTURE_2D);
 }
 
 void FreeTexture( GLuint texture ){
 	glDeleteTextures( 1, &texture ); 
 }
-
-
 
 class Vector {
 
@@ -161,14 +151,14 @@ class Vector {
 		double y;
 		double z;
 
-		Vector(double x, double y, double z):x(x), y(y), z(z) {
-			
+		Vector(double x, double y, double z):x(x), y(y), z(z) {			
 		}
 		
 		double angle_btwn_vectors(Vector vec){
 			double angle = x*vec.x + y*vec.y +  z*vec.z;
 			return angle;
 		}
+		
 		Vector perpendicular(){
 			return Vector(-z, 0 , x);
 		}
@@ -176,9 +166,11 @@ class Vector {
 		Vector crossProduct(Vector v) {
 			return Vector (y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 		}
+		
 		double magnitude () {
 			return sqrt((x*x) + (y*y) + (z*z));
 		}
+		
 		Vector normalize () {
 			double magnitude = sqrt((x*x) + (y*y) + (z*z));
 			if(magnitude==0)
@@ -186,15 +178,19 @@ class Vector {
 				
 			return Vector(x/magnitude, y/magnitude, z/magnitude);
 		}
+		
 		double distance_btwn_vectors(Vector vec){
 			return sqrt((x - vec.x)*(x - vec.x) + (y - vec.y)*(y- vec.y) + (z - vec.z)*(z - vec.z));
 		}
+		
 		Vector add(Vector vec){
 			return Vector(x + vec.x, y + vec.y, z + vec.z);
 		}
+		
 		Vector reduce_magnitude(){
 			return Vector(x*0.99, y*0.99, z*0.99);
 		}
+		
 		Vector multiplyconstant (double scalar) {
 			printf("%lf %lf %lf \n", x, y, z);
 			return Vector (x*scalar, y*scalar, z*scalar);
@@ -206,10 +202,10 @@ class Vector {
 	     	printf("\nAngle = %f, cos(%f) = %f\n",angle,angle,cosf(angle));
 	    	m[0][0] = cosf(angle);
 	     	m[0][1] = sinf(angle);
-	     	m[0][2] = 0; //refX * (1 - cosf(angle)) + refY*(sinf(angle));
+	     	m[0][2] = 0; 
 	     	m[1][0] = -sinf(angle);
 	     	m[1][1] = cosf(angle);
-	     	m[1][2] = 0; //refY * (1 - cosf(angle)) + refX*(sinf(angle));
+	     	m[1][2] = 0; 
 	     	printf("%lf\n", z);
 			 return Vector(x*m[0][0] + z * m[0][1] ,y, x*m[1][0] + z * m[1][1] );
 		}
@@ -233,15 +229,15 @@ class Table {
 		    glNormal3d(0, 1, 0);
 		    for(int x = 3; x < width-4; x++) {
 		    	glTexCoord2d(0.0,0.0);glVertex3d(x, 0, 0);
-        			glTexCoord2d(1.0,0.0);glVertex3d(x+1, 0, 0);
-        			glTexCoord2d(1.0,1.0);glVertex3d(x+1, 0, 4);
-        			glTexCoord2d(0.0,1.0);glVertex3d(x, 0, 4);
+        		glTexCoord2d(1.0,0.0);glVertex3d(x+1, 0, 0);
+        		glTexCoord2d(1.0,1.0);glVertex3d(x+1, 0, 4);
+        		glTexCoord2d(0.0,1.0);glVertex3d(x, 0, 4);
 		    }
 		    for(int x = 3; x < width-4; x++) {
 		    	glTexCoord2d(0.0,0.0);glVertex3d(x, 0, 45);
-        			glTexCoord2d(1.0,0.0);glVertex3d(x+1, 0, 45);
-        			glTexCoord2d(1.0,1.0);glVertex3d(x+1, 0, 48);
-        			glTexCoord2d(0.0,1.0);glVertex3d(x, 0, 48);
+        		glTexCoord2d(1.0,0.0);glVertex3d(x+1, 0, 45);
+        		glTexCoord2d(1.0,1.0);glVertex3d(x+1, 0, 48);
+        		glTexCoord2d(0.0,1.0);glVertex3d(x, 0, 48);
 		    }
 
 		    for (int x = 0; x < width - 1; x++) {
@@ -252,10 +248,9 @@ class Table {
         			glTexCoord2d(1.0,0.0);glVertex3d(x+1, 0, z);
         			glTexCoord2d(1.0,1.0);glVertex3d(x+1, 0, z+1);
         			glTexCoord2d(0.0,1.0);glVertex3d(x, 0, z+1);
-        			//glBindTexture(GL_TEXTURE_2D, 0);
+        			
       			}
     		}
-			
     		glEnd();
 			glEndList();
   		}
@@ -268,65 +263,65 @@ void draw_border(){
 	glBegin(GL_QUADS);
     glNormal3d(0, 1, 0);
 	//glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, BROWN);
-	 glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 0);
-	 glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 0);
-	 glTexCoord2d(1.0,1.0);glVertex3d(0, 1, 48);
-	 glTexCoord2d(0.0,1.0);glVertex3d(0, 0, 48);
+	glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 0);
+	glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 0);
+	glTexCoord2d(1.0,1.0);glVertex3d(0, 1, 48);
+	glTexCoord2d(0.0,1.0);glVertex3d(0, 0, 48);
 	
-		glTexCoord2d(0.0,0.0);glVertex3d(23, 0, 0);
-		glTexCoord2d(1.0,0.0);glVertex3d(23, 1, 0);
-		glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 48);
-		glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 48);
-	
-		glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 0);
-		glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 0);
-		glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 0);
-		glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 0);
-	        			
-		glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 47);
-		glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 47);
-		glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 47);
-		glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 47);
-	
-		glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, -1);
-		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, -1);
-		glTexCoord2d(1.0,1.0);glVertex3d(-1, 1, 48);
-		glTexCoord2d(0.0,1.0);glVertex3d(-1, 0, 48);
-		
-		glTexCoord2d(0.0,0.0);glVertex3d(24, 0, -1);
-		glTexCoord2d(1.0,0.0);glVertex3d(24, 1, -1);
-		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
-		glTexCoord2d(0.0,1.0);glVertex3d(24, 0, 48);
-	
-		glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, -1);
-		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, -1);
-		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, -1);
-		glTexCoord2d(0.0,1.0);glVertex3d(24, 0, -1);
-	
-		glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, 48);
-		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 48);
-		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
-		glTexCoord2d(0.0,1.0);glVertex3d(24, 0, 48);
-	
-		glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, 47);
-		glTexCoord2d(1.0,0.0);glVertex3d(24, 1, 47);
-		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
-		glTexCoord2d(0.0,1.0);glVertex3d(-1, 1, 48);
-		
-		glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, -1);
-		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 0);
-		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 0);
-		glTexCoord2d(0.0,1.0);glVertex3d(24, 1, -1);
+	glTexCoord2d(0.0,0.0);glVertex3d(23, 0, 0);
+	glTexCoord2d(1.0,0.0);glVertex3d(23, 1, 0);
+	glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 48);
+	glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 48);
 
-		glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, 0);
-		glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 47);
-		glTexCoord2d(1.0,1.0);glVertex3d(0, 1, 47);
-		glTexCoord2d(0.0,1.0);glVertex3d(0, 1, 0);
+	glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 0);
+	glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 0);
+	glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 0);
+	glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 0);
+        			
+	glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 47);
+	glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 47);
+	glTexCoord2d(1.0,1.0);glVertex3d(23, 1, 47);
+	glTexCoord2d(0.0,1.0);glVertex3d(23, 0, 47);
 
-		glTexCoord2d(0.0,0.0);glVertex3d(23, 1, 0);
-		glTexCoord2d(1.0,0.0);glVertex3d(23, 1, 47);
-		glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 47);
-		glTexCoord2d(0.0,1.0);glVertex3d(24, 1, 0);
+	glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, -1);
+	glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, -1);
+	glTexCoord2d(1.0,1.0);glVertex3d(-1, 1, 48);
+	glTexCoord2d(0.0,1.0);glVertex3d(-1, 0, 48);
+	
+	glTexCoord2d(0.0,0.0);glVertex3d(24, 0, -1);
+	glTexCoord2d(1.0,0.0);glVertex3d(24, 1, -1);
+	glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
+	glTexCoord2d(0.0,1.0);glVertex3d(24, 0, 48);
+
+	glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, -1);
+	glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, -1);
+	glTexCoord2d(1.0,1.0);glVertex3d(24, 1, -1);
+	glTexCoord2d(0.0,1.0);glVertex3d(24, 0, -1);
+
+	glTexCoord2d(0.0,0.0);glVertex3d(-1, 0, 48);
+	glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 48);
+	glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
+	glTexCoord2d(0.0,1.0);glVertex3d(24, 0, 48);
+
+	glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, 47);
+	glTexCoord2d(1.0,0.0);glVertex3d(24, 1, 47);
+	glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 48);
+	glTexCoord2d(0.0,1.0);glVertex3d(-1, 1, 48);
+	
+	glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, -1);
+	glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 0);
+	glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 0);
+	glTexCoord2d(0.0,1.0);glVertex3d(24, 1, -1);
+
+	glTexCoord2d(0.0,0.0);glVertex3d(-1, 1, 0);
+	glTexCoord2d(1.0,0.0);glVertex3d(-1, 1, 47);
+	glTexCoord2d(1.0,1.0);glVertex3d(0, 1, 47);
+	glTexCoord2d(0.0,1.0);glVertex3d(0, 1, 0);
+
+	glTexCoord2d(0.0,0.0);glVertex3d(23, 1, 0);
+	glTexCoord2d(1.0,0.0);glVertex3d(23, 1, 47);
+	glTexCoord2d(1.0,1.0);glVertex3d(24, 1, 47);
+	glTexCoord2d(0.0,1.0);glVertex3d(24, 1, 0);
 
 	glEnd();
 }
@@ -346,7 +341,6 @@ class Ball {
 		
 		Ball(double r, GLfloat* c, double x, double y, double z, Vector velocity, double accelaration):
       	radius(r), color(c), y(y), x(x), z(z) , velocity(velocity), accelaration(accelaration){
-
   		}
   
   		void update() {
@@ -354,11 +348,21 @@ class Ball {
 			if(((x<3 && z<3) || (x<3 && z>45) || ( x>21 && z>45) || (x>21 && z<3)) && color != WHITE){
 				velocity.y = -0.6;
 			}
-			if(x<1 || x > 22 ){
+			if(x<1){
 				velocity.x = -velocity.x;
+				x = 1;
 			}
-			if(z<1 || z > 46){
+			if(x>22){
+				velocity.x = -velocity.x;
+				x = 22;
+			}
+			if(z<1){
 				velocity.z = -velocity.z;
+				z = 1;
+			}
+			if(z>46){
+				velocity.z = -velocity.z;
+				z = 46;
 			}
 			
 			x += velocity.x;
@@ -375,32 +379,30 @@ class Ball {
 		void detect_collision(Ball &two){
 			j++;
 			
-			if( Vector(x,y,z).distance_btwn_vectors( Vector(two.x, two.y , two.z)) < 2){
-				printf("%lf %lf  \n", z, two.z);
-				printf("%lf %lf  \n", x, two.x);
-				//printf("hello %d ", j);
+			if( Vector(x,y,z).distance_btwn_vectors( Vector(two.x, two.y , two.z)) < 1.9){
 				double v1 = velocity.magnitude();
 				double v2 = two.velocity.magnitude();
 				//v1
+				
 				Vector temp2(0,0,0),temp4(0,0,0);
 				Vector direction = Vector((two.x - x), (two.y - y), (two.z -z)).normalize();
 				double cos_angle = direction.angle_btwn_vectors(velocity.normalize());
 				double sin_angle = sqrt(1 - (cos_angle*cos_angle));
-				Vector temp1 = direction.multiplyconstant(v1*cos_angle); //two.velocity.
+				Vector temp1 = direction.multiplyconstant(v1*cos_angle+0.01); //two.velocity.
 				
 				if((direction.crossProduct(velocity.normalize())).y < 0)
-						temp2 = (direction.perpendicular()).multiplyconstant(v1*sin_angle);		//velocity
-					else
-						temp2 = (direction.perpendicular()).multiplyconstant(-1*v1*sin_angle);
+					temp2 = (direction.perpendicular()).multiplyconstant(v1*sin_angle);		//velocity
+				else
+					temp2 = (direction.perpendicular()).multiplyconstant(-1*v1*sin_angle);
 				
 				direction = direction.multiplyconstant(-1);
 				cos_angle = direction.angle_btwn_vectors(two.velocity.normalize());
 				sin_angle = sqrt(1 - (cos_angle*cos_angle));
 				Vector temp3 = direction.multiplyconstant(v2*cos_angle); //velocity.
 				if((direction.crossProduct(two.velocity.normalize())).y < 0)
-						temp4 = (direction.perpendicular()).multiplyconstant(v2*sin_angle);		//two.velocity
-					else
-						temp4 = (direction.perpendicular()).multiplyconstant(-1*v2*sin_angle);
+					temp4 = (direction.perpendicular()).multiplyconstant(v2*sin_angle);		//two.velocity
+				else
+					temp4 = (direction.perpendicular()).multiplyconstant(-1*v2*sin_angle);
 				
 				velocity = temp2.add(temp3);
 				two.velocity = temp1.add(temp4);
@@ -408,15 +410,15 @@ class Ball {
 		}
 };
 
-	Ball balls[] = {
-	  	Ball(1, WHITE,11,1, 45, Vector(0, 0, 0), 0),
-	  	Ball(1, RED, 10, 1, 22, Vector(0, 0, 0),0),
-	  	Ball(1, RED, 12, 1, 22, Vector(0, 0, 0),0),
-		Ball(1, RED, 14, 1, 22, Vector(0, 0, 0),0),
-		Ball(1, YELLOW, 11, 1, 24, Vector(0, 0, 0),0),
-	  	Ball(1, YELLOW, 13, 1, 24, Vector(0, 0, 0),0),
-		Ball(1, BLUE, 12, 1, 26, Vector(0, 0, 0),0)
-	};
+Ball balls[] = {
+  	Ball(1, WHITE,11,1, 45, Vector(0, 0, 0), 0),
+  	Ball(1, RED, 10, 1, 22, Vector(0, 0, 0),0),
+  	Ball(1, RED, 12, 1, 22, Vector(0, 0, 0),0),
+	Ball(1, RED, 14, 1, 22, Vector(0, 0, 0),0),
+	Ball(1, YELLOW, 11, 1, 24, Vector(0, 0, 0),0),
+  	Ball(1, YELLOW, 13, 1, 24, Vector(0, 0, 0),0),
+	Ball(1, BLUE, 12, 1, 26, Vector(0, 0, 0),0)
+};
 
 class Arrow{
 	double arrow_x[7] = {10.5, 11.5, 11.5, 12, 11, 10, 10.5};
@@ -434,18 +436,22 @@ class Arrow{
 				arrow_z[i] = temp.z + balls[0].z;
 			}
 		}
+
 		void translate_arrow(){
 			for(int i=0;i<7;i++){
+				
 				arrow_x[i] += balls[0].velocity.x;
 				arrow_z[i] += balls[0].velocity.z;
 			}
 		}
+
 		Vector direction_of_arrow(){
 			return Vector(arrow_x[2] - arrow_x[1], 0, arrow_z[2] - arrow_z[1]).normalize();
 		}
+
 		void draw_arrow(){
 			glPushMatrix();
-			glBegin(GL_LINE_LOOP) ;             /* draw a filled polygon */
+			glBegin(GL_LINE_LOOP) ;             
 			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, RED);
 			for(int i=0;i<7;i++){
 				glVertex3d(arrow_x[i],1, arrow_z[i]);
@@ -457,40 +463,34 @@ class Arrow{
 		
 };
 
-
-
-	// Global variables: a camera, a checkerboard and some balls.
-	Table table(24 , 48);
-	//Camera camera;
-	Arrow arrow;
+Table table(24 , 48);
+//Camera camera;
+Arrow arrow;
 
 void launch_ball(){
 	Vector direction = arrow.direction_of_arrow();
-	printf("%lf %lf \n", direction.x, direction.z);	
+	//printf("%lf %lf \n", direction.x, direction.z);	
 	balls[0].velocity = Vector(0.4*direction.x, 0, 0.4*direction.z);
 }
+
 void camera (void) {
     glRotatef(xrot,1.0,0.0,0.0);  //rotate our camera on teh x-axis (left and right)
     glRotatef(yrot,0.0,1.0,0.0);  //rotate our camera on the y-axis (up and down)
     glTranslated(-xpos,-ypos,-zpos); //translate the screen to the position of our camera
 }
 
-// Application-specific initialization: Set up global lighting parameters
-// and create display lists.
 void init() {
-	  glEnable(GL_DEPTH_TEST);
-	  glEnable( GL_TEXTURE_2D );
-	  glLightfv(GL_LIGHT0, GL_DIFFUSE, WHITE);
-	  glLightfv(GL_LIGHT0, GL_SPECULAR, WHITE);
-	  glMaterialfv(GL_FRONT, GL_SPECULAR, WHITE);
-	  glMaterialf(GL_FRONT, GL_SHININESS, 30);
-	  glEnable(GL_LIGHTING);
-	  glEnable(GL_LIGHT0);
-	  table.create();
+	glEnable(GL_DEPTH_TEST);
+	glEnable( GL_TEXTURE_2D );
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, WHITE);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, WHITE);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, WHITE);
+	glMaterialf(GL_FRONT, GL_SHININESS, 30);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	table.create();
 }
 
-// Draws one frame, the checkerboard then the balls, from the current camera
-// position.
 void display() {
   	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   	glLoadIdentity();
@@ -504,7 +504,7 @@ void display() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	  table.draw();
+	table.draw();
     glDisable(GL_TEXTURE_2D);
 
   	glEnable(GL_TEXTURE_2D);
@@ -512,14 +512,11 @@ void display() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
 	draw_border();
     glDisable(GL_TEXTURE_2D);
 
-	arrow.translate_arrow();
-	arrow.draw_arrow();
-  	
-	  for(int i=0; i<6;i++){
+  	arrow.draw_arrow();
+	for(int i=0; i<6;i++){
   		for(int j=i+1; j<7; j++){
   			balls[i].detect_collision(balls[j]);
   		}
@@ -527,6 +524,8 @@ void display() {
   	for (int i = 0; i < 7; i++) {
     	balls[i].update();
   	}
+	arrow.translate_arrow();
+	
 	
   	glFlush();
   	glutSwapBuffers();
@@ -535,17 +534,17 @@ void display() {
 
 // On reshape, constructs a camera that perfectly fits the window.
 void reshape(GLint w, GLint h) {
-	  glViewport(0, 0, w, h);
-	  glMatrixMode(GL_PROJECTION);
-	  glLoadIdentity();
-	  gluPerspective(40.0, GLfloat(w) / GLfloat(h), 1.0, 150.0);
-	  glMatrixMode(GL_MODELVIEW);
+	glViewport(0, 0, w, h);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(40.0, GLfloat(w) / GLfloat(h), 1.0, 150.0);
+	glMatrixMode(GL_MODELVIEW);
 }
 
 // Requests to draw the next frame.
 void timer(int v) {
-  glutPostRedisplay();
-  glutTimerFunc(1000/60, timer, v);
+	glutPostRedisplay();
+	glutTimerFunc(1000/60, timer, v);
 }
 
 void mouse_motion(int x, int y){
@@ -596,7 +595,6 @@ void special(int key, int, int) {
 			//balls[0].velocity = balls[0].velocity.multiply_matrix(-30);
     		break;
     	case GLUT_KEY_UP:
-    		printf("hello");
 			launch_ball();
     		break;
     	case GLUT_KEY_DOWN: break;
@@ -671,9 +669,6 @@ int main(int argc, char** argv) {
 	glutTimerFunc(100, timer, 0);
 	init();
 	init_textures();
-	//texture[0] = LoadTexture( "C:/Users/Husain/Documents/GL/Object-Collision-in-3D/Object_Collision_3D/texture2.bmp", 300, 300 ); //load our texture
-	//texture[1] = LoadTexture( "C:/Users/Husain/Documents/GL/Object-Collision-in-3D/Object_Collision_3D/textures/texture.bmp", 300, 300 ); //load our texture
-
 	glutMainLoop();
 	//FreeTexture(texture);
 	//return 0;
