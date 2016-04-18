@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include<math.h>
 #include<stdio.h>
-
+#include<string>
+using namespace std;
 // Colors
 GLfloat WHITE[] = {1, 1, 1};
 GLfloat RED[] = {1, 0, 0};
@@ -12,7 +13,11 @@ GLfloat YELLOW[] = {1, 1, 0};
 GLfloat BLUE[] = {0, 0, 1};
 GLfloat GREEN[] = {0, 1, 0};
 GLfloat BROWN[] = {0.64, 0.16, 0.16};
+int wi, hi;
+int score=0;
+float power_var = 1;
 
+int final_pos = 10;
 int NB_TEXTURES = 2;
 static GLuint texName[2];
 
@@ -140,9 +145,21 @@ void init_textures()
     }
 }
 
+
 void FreeTexture( GLuint texture ){
 	glDeleteTextures( 1, &texture ); 
 }
+
+void drawBitmapText(char *string,float x,float y,float z)
+{
+    char *c;
+    glRasterPos3f(x, y,z);
+    for (c=string; *c != '\0'; c++)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
+    }
+}
+
 
 class Vector {
 
@@ -192,21 +209,21 @@ class Vector {
 		}
 		
 		Vector multiplyconstant (double scalar) {
-			printf("%lf %lf %lf \n", x, y, z);
+		//	printf("%lf %lf %lf \n", x, y, z);
 			return Vector (x*scalar, y*scalar, z*scalar);
 		}
 		
 		Vector multiply_matrix (double angle) {
 			double m[3][3];
 			angle = (angle * 0.01745329251);                                //degree to radian conversion
-	     	printf("\nAngle = %f, cos(%f) = %f\n",angle,angle,cosf(angle));
+	     //	printf("\nAngle = %f, cos(%f) = %f\n",angle,angle,cosf(angle));
 	    	m[0][0] = cosf(angle);
 	     	m[0][1] = sinf(angle);
 	     	m[0][2] = 0; 
 	     	m[1][0] = -sinf(angle);
 	     	m[1][1] = cosf(angle);
 	     	m[1][2] = 0; 
-	     	printf("%lf\n", z);
+	     //	printf("%lf\n", z);
 			 return Vector(x*m[0][0] + z * m[0][1] ,y, x*m[1][0] + z * m[1][1] );
 		}
 };
@@ -225,10 +242,10 @@ class Table {
 			glNewList(displayListId, GL_COMPILE);
 			//GLfloat lightPosition[] = {4, 3, 7, 1};
 		    //glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-			glBegin(GL_QUADS);
-		    glNormal3d(0, 1, 0);
-		    for(int x = 3; x < width-4; x++) {
-		    	glTexCoord2d(0.0,0.0);glVertex3d(x, 0, 0);
+		    glBegin(GL_QUADS);
+			for(int x = 3; x < width-4; x++) {
+		    	
+				glTexCoord2d(0.0,0.0);glVertex3d(x, 0, 0);
         		glTexCoord2d(1.0,0.0);glVertex3d(x+1, 0, 0);
         		glTexCoord2d(1.0,1.0);glVertex3d(x+1, 0, 4);
         		glTexCoord2d(0.0,1.0);glVertex3d(x, 0, 4);
@@ -258,10 +275,52 @@ class Table {
     		glCallList(displayListId);
   		}		
 };
+void room(){
+	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, WHITE);
+	glBegin(GL_QUADS);
+	/*glVertex3d(-10,-10,-10);
+	glVertex3d(40,-10,-10);
+	
+	glVertex3d(-10,-10,-10);
+	glVertex3d(-10,-10,60);
+	
+	glVertex3d(-10,-10,-10);
+	glVertex3d(-10,70,-10);
+	
+	glVertex3d(-10,-10,-10);
+	glVertex3d(60,-10,-10);*/
+	//glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE,
+     //               DARK_GREEN );
+    glVertex3d(-10,-10,-10);
+	glVertex3d(60,-10,-10);
+	glVertex3d(60,70,-10);
+	glVertex3d(-10,70,-10);
+	 
+	glVertex3d(-10,-10,-10);
+	glVertex3d(-10,70,-10);
+	glVertex3d(-10,70,60);
+	glVertex3d(-10,-10,60);               
+	glEnd();
+}
+/*void draw_net(){
+	glPushMatrix();
+	glBegin(GL_LINE_LOOP) ;             
+	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, WHITE);
+	for(int i=0;i<3;i++){
+		for(int j=0;j<3;j++){
+			glVertex3d(0,0,0);
+			glVertex3d(,0,0);
+			glVertex3d(1,0,1);
+			glVertex3d(0,0,1);
+		}
+	}
+	glEnd();
+	glPopMatrix();
+}*/
 void draw_border(){
 	int x, z;
 	glBegin(GL_QUADS);
-    glNormal3d(0, 1, 0);
+	glNormal3d(0, 1, 0);
 	//glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, BROWN);
 	glTexCoord2d(0.0,0.0);glVertex3d(0, 0, 0);
 	glTexCoord2d(1.0,0.0);glVertex3d(0, 1, 0);
@@ -338,36 +397,54 @@ class Ball {
 		double z;
 		Vector velocity;
 		double accelaration;
+		int out;
 		
-		Ball(double r, GLfloat* c, double x, double y, double z, Vector velocity, double accelaration):
-      	radius(r), color(c), y(y), x(x), z(z) , velocity(velocity), accelaration(accelaration){
+		Ball(double r, GLfloat* c, double x, double y, double z, Vector velocity, double accelaration, int o):
+      	radius(r), color(c), y(y), x(x), z(z) , velocity(velocity), accelaration(accelaration), out(o){
   		}
   
   		void update() {
 			//velocity += accelaration;	
-			if(((x<3 && z<3) || (x<3 && z>45) || ( x>21 && z>45) || (x>21 && z<3)) && color != WHITE){
+			if(out ==1 && color != WHITE){
+				
+				if(y < -1){
+					score++;
+					velocity = Vector(0,0,0);
+					x = final_pos;
+					y = 1;
+					z = -10;
+					final_pos = final_pos + 2;	
+				}
+			}
+			else{
+				if(((x<3 && z<3) || (x<3 && z>45) || ( x>21 && z>45) || (x>21 && z<3)) && color != WHITE){
+				//score++;
 				velocity.y = -0.6;
+				out = 1;
+				}
+				if(x<1){
+					velocity.x = -velocity.x;
+					x = 1;
+				}
+				if(x>22){
+					velocity.x = -velocity.x;
+					x = 22;
+				}
+				if(z<1){
+					velocity.z = -velocity.z;
+					z = 1;
+				}
+				if(z>46){
+					velocity.z = -velocity.z;
+					z = 46;
+				}
+				
+				
+					
 			}
-			if(x<1){
-				velocity.x = -velocity.x;
-				x = 1;
-			}
-			if(x>22){
-				velocity.x = -velocity.x;
-				x = 22;
-			}
-			if(z<1){
-				velocity.z = -velocity.z;
-				z = 1;
-			}
-			if(z>46){
-				velocity.z = -velocity.z;
-				z = 46;
-			}
-			
 			x += velocity.x;
-			y += velocity.y;
-			z += velocity.z;
+				y += velocity.y;
+				z += velocity.z;
 			velocity = velocity.reduce_magnitude();
 	    	glPushMatrix();
 			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
@@ -411,13 +488,13 @@ class Ball {
 };
 
 Ball balls[] = {
-  	Ball(1, WHITE,11,1, 45, Vector(0, 0, 0), 0),
-  	Ball(1, RED, 10, 1, 22, Vector(0, 0, 0),0),
-  	Ball(1, RED, 12, 1, 22, Vector(0, 0, 0),0),
-	Ball(1, RED, 14, 1, 22, Vector(0, 0, 0),0),
-	Ball(1, YELLOW, 11, 1, 24, Vector(0, 0, 0),0),
-  	Ball(1, YELLOW, 13, 1, 24, Vector(0, 0, 0),0),
-	Ball(1, BLUE, 12, 1, 26, Vector(0, 0, 0),0)
+  	Ball(1, WHITE,11,1, 45, Vector(0, 0, 0), 0,0),
+  	Ball(1, RED, 10, 1, 22, Vector(0, 0, 0),0,0),
+  	Ball(1, RED, 12, 1, 22, Vector(0, 0, 0),0, 0),
+	Ball(1, RED, 14, 1, 22, Vector(0, 0, 0),0, 0),
+	Ball(1, YELLOW, 11, 1, 24, Vector(0, 0, 0),0, 0),
+  	Ball(1, YELLOW, 13, 1, 24, Vector(0, 0, 0),0, 0),
+	Ball(1, BLUE, 12, 1, 26, Vector(0, 0, 0),0, 0)
 };
 
 class Arrow{
@@ -470,12 +547,12 @@ Arrow arrow;
 void launch_ball(){
 	Vector direction = arrow.direction_of_arrow();
 	//printf("%lf %lf \n", direction.x, direction.z);	
-	balls[0].velocity = Vector(0.4*direction.x, 0, 0.4*direction.z);
+	balls[0].velocity = Vector(0.4*power_var*direction.x, 0, 0.4*power_var*direction.z);
 }
 
 void camera (void) {
-    glRotatef(xrot,1.0,0.0,0.0);  //rotate our camera on teh x-axis (left and right)
-    glRotatef(yrot,0.0,1.0,0.0);  //rotate our camera on the y-axis (up and down)
+    glRotatef(xrot,1.0,0.0,0.0);  
+    glRotatef(yrot,0.0,1.0,0.0);  
     glTranslated(-xpos,-ypos,-zpos); //translate the screen to the position of our camera
 }
 
@@ -494,11 +571,8 @@ void init() {
 void display() {
   	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   	glLoadIdentity();
-	/*gluLookAt(8, 8, 8,
-            table.centerx(), 0.0, table.centerz(),
-            0.0, -1.0, 0.0);*/
-    camera();
-
+	
+	camera();
   	glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texName[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -514,8 +588,55 @@ void display() {
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	draw_border();
     glDisable(GL_TEXTURE_2D);
+	
+	//char str[50], power[50];
+	//snprintf(power, sizeof(power), "Power : %f X", power_var);
+	//drawBitmapText(power, 25, 8, -4);
+    //snprintf(str, sizeof(str), "Score : %d", score);
+	  	
+  	
+  	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	
+	glLoadIdentity();
+	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, WHITE);
+	gluOrtho2D(0.0, 500, 0.0, 500);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glRasterPos2i(50, 10);
+	char power[50], str[50];
+	snprintf(power, sizeof(power), "Power : %.2f X", power_var);
+	snprintf(str, sizeof(str), "Score : %d", score);
+	void * font = GLUT_BITMAP_TIMES_ROMAN_24;//GLUT_BITMAP_9_BY_15;
+	for (int i = 0; i<15; ++i)
+	{
+	  //char c = *i;
+	  glColor3d(1.0, 0.0, 0.0);
+	  glutBitmapCharacter(font, power[i]);
+	}
+		glLoadIdentity();
+	//glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, WHITE);
+	glRasterPos2i(400, 10);
+	for (int i = 0; i<10; ++i)
+	{
+	  //char c = *i;
+	  glColor3d(1.0, 0.0, 0.0);
+	  glutBitmapCharacter(font, str[i]);
+	}
+	
+	glMatrixMode(GL_PROJECTION); //swapped this with...
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW); //...this
+	glPopMatrix();
+	
+  	if(score == 6){
+  		drawBitmapText("Congratulations! You won.", 3, 8, 24);
+  	}
 
-  	arrow.draw_arrow();
+	  arrow.draw_arrow();
+  	//draw_net();
+	//room();
 	for(int i=0; i<6;i++){
   		for(int j=i+1; j<7; j++){
   			balls[i].detect_collision(balls[j]);
@@ -526,14 +647,15 @@ void display() {
   	}
 	arrow.translate_arrow();
 	
-	
   	glFlush();
   	glutSwapBuffers();
-  	angle++;
+  	//angle++;
 }
 
 // On reshape, constructs a camera that perfectly fits the window.
 void reshape(GLint w, GLint h) {
+	wi = w;
+	hi = h;
 	glViewport(0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -596,6 +718,7 @@ void special(int key, int, int) {
     		break;
     	case GLUT_KEY_UP:
 			launch_ball();
+			power_var = 1;
     		break;
     	case GLUT_KEY_DOWN: break;
   	}
@@ -644,11 +767,13 @@ void keyboard (unsigned char key, int x, int y) {
 			yrot += 360;
     }
     if(key == 'k'){
-    	printf("%lf \n", balls[0].velocity.z);
+    //	printf("%lf \n", balls[0].velocity.z);
 		//balls[0].velocity = Vector(0,0,-0.5);//balls[0].velocity.multiply_matrix(30);
     	
     }
-    
+    if(key == 'p'){
+    	power_var = power_var + 0.25;
+    }
 	if (key==27){
 	    exit(0);
     }
@@ -658,7 +783,9 @@ void keyboard (unsigned char key, int x, int y) {
 int main(int argc, char** argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	glutCreateWindow("Collision of Objects");
+	glutCreateWindow("Snooker");
+	//glutInitWindowPosition(80, 60);
+  	//glutInitWindowSize(500, 500);
 	glutFullScreen();
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
